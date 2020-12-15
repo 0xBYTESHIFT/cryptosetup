@@ -1,0 +1,60 @@
+version: '3.2'
+
+volumes:
+  nextcloud:
+  db:
+
+services:
+  db:
+    image: postgres:alpine
+    container_name: nextcloud-db
+    restart: always
+    volumes:
+      - db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB_FILE=/run/secrets/postgres_db
+      - POSTGRES_USER_FILE=/run/secrets/postgres_user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+    secrets:
+      - postgres_db
+      - postgres_user
+      - postgres_password
+
+  app:
+    image: nextcloud
+    container_name: nextcloud-app
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    volumes:
+      - nextcloud:/var/www/html
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB_FILE=/run/secrets/postgres_db
+      - POSTGRES_USER_FILE=/run/secrets/postgres_user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - NEXTCLOUD_ADMIN_PASSWORD_FILE=/run/secrets/nextcloud_admin_password
+      - NEXTCLOUD_ADMIN_USER_FILE=/run/secrets/nextcloud_admin_user
+      - NEXTCLOUD_TRUSTED_DOMAINS=localhost
+      - NEXTCLOUD_HOSTNAME=127.0.0.1
+      - VIRTUAL_HOST=127.0.0.1
+    secrets:
+      - nextcloud_admin_password
+      - nextcloud_admin_user
+      - postgres_db
+      - postgres_password
+      - postgres_user
+
+secrets:
+  nextcloud_admin_password:
+    file: ./secrets/nextcloud_admin_password.secret
+  nextcloud_admin_user:
+    file: ./secrets/nextcloud_admin_user.secret
+  postgres_db:
+    file: ./secrets/postgres_db.secret
+  postgres_password:
+    file: ./secrets/postgres_password.secret
+  postgres_user:
+    file: ./secrets/postgres_user.secret
