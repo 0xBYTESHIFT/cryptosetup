@@ -3,6 +3,8 @@ version: '3.2'
 volumes:
   nextcloud:
   db:
+  document_data:
+  document_log:
 
 services:
   db:
@@ -28,6 +30,7 @@ services:
       - "8080:80"
     depends_on:
       - db
+      - document-server
     volumes:
       - nextcloud:/var/www/html
     environment:
@@ -44,6 +47,23 @@ services:
       - postgres_db
       - postgres_password
       - postgres_user
+
+  document-server:
+    image: onlyoffice/documentserver:latest
+    stdin_open: true
+    tty: true
+    restart: always
+    ports:
+      - 8889:8080
+      - 8890:443
+      - 8891:80
+    deploy:
+       replicas: 1
+       placement:
+        constraints: [node.role == worker]
+    volumes:
+      - document_data:/var/www/onlyoffice/Data
+      - document_log:/var/log/onlyoffice
 
 secrets:
   nextcloud_admin_password:
