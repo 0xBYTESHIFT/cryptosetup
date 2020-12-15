@@ -38,8 +38,6 @@ services:
       - NEXTCLOUD_ADMIN_PASSWORD_FILE=/run/secrets/nextcloud_admin_password
       - NEXTCLOUD_ADMIN_USER_FILE=/run/secrets/nextcloud_admin_user
       - NEXTCLOUD_TRUSTED_DOMAINS=localhost
-      - NEXTCLOUD_HOSTNAME=127.0.0.1
-      - VIRTUAL_HOST=127.0.0.1
     secrets:
       - nextcloud_admin_password
       - nextcloud_admin_user
