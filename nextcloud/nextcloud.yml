@@ -1,18 +1,26 @@
 version: '3.2'
 
 volumes:
-  nextcloud:
-  db:
+  nextcloud_app:
+  nextcloud_db:
   document_data:
   document_log:
 
+networks:
+  nextcloud_net:
+    driver: bridge
+
 services:
-  db:
+  nextcloud-db:
     image: postgres:alpine
     container_name: nextcloud-db
     restart: always
+    expose:
+      - "5432"
+    networks:
+      - nextcloud_net
     volumes:
-      - db:/var/lib/postgresql/data
+      - nextcloud_db:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB_FILE=/run/secrets/postgres_db
       - POSTGRES_USER_FILE=/run/secrets/postgres_user
@@ -26,21 +34,26 @@ services:
     image: nextcloud
     container_name: nextcloud-app
     restart: always
+    networks:
+      - nextcloud_net
     ports:
-      - "8080:80"
+      - "80:80"
+      - "443:443"
     depends_on:
-      - db
+      - nextcloud-db
       - document-server
     volumes:
-      - nextcloud:/var/www/html
+      - nextcloud_app:/var/www/html
     environment:
-      - POSTGRES_HOST=db
+      - DB_TYPE=postgres
+      - POSTGRES_HOST=nextcloud-db
       - POSTGRES_DB_FILE=/run/secrets/postgres_db
       - POSTGRES_USER_FILE=/run/secrets/postgres_user
       - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
       - NEXTCLOUD_ADMIN_PASSWORD_FILE=/run/secrets/nextcloud_admin_password
       - NEXTCLOUD_ADMIN_USER_FILE=/run/secrets/nextcloud_admin_user
-      - NEXTCLOUD_TRUSTED_DOMAINS=localhost
+      - NEXTCLOUD_TRUSTED_DOMAINS=localhost tortique.tech nextcloud-db
+      - NEXTCLOUD_HOSTNAME=tortique.tech
     secrets:
       - nextcloud_admin_password
       - nextcloud_admin_user
@@ -51,16 +64,14 @@ services:
   document-server:
     image: onlyoffice/documentserver:latest
     stdin_open: true
-    tty: true
     restart: always
+    networks:
+      - nextcloud_net
+    tty: true
     ports:
-      - 8889:8080
-      - 8890:443
-      - 8891:80
-    deploy:
-       replicas: 1
-       placement:
-        constraints: [node.role == worker]
+      - "8889:8080"
+      - "8890:443"
+      - "8891:80"
     volumes:
       - document_data:/var/www/onlyoffice/Data
       - document_log:/var/log/onlyoffice
